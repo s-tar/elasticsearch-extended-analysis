@@ -1,1 +1,1 @@
-# elasticsearch-extended-analisis
+# elasticsearch-extended-analysis
