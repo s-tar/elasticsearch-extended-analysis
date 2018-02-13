@@ -5,10 +5,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.elasticsearch.index.analysis.tokenizer.tokens.AlphaToken;
-import org.elasticsearch.index.analysis.tokenizer.tokens.NumberToken;
-import org.elasticsearch.index.analysis.tokenizer.tokens.SymbolToken;
-import org.elasticsearch.index.analysis.tokenizer.tokens.Token;
+import org.elasticsearch.index.analysis.tokenizer.tokens.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,16 +19,17 @@ public class ExtendedTokenizer extends Tokenizer {
         DIGIT,
         SYMBOL,
         OTHER,
-        END_OF_TERM,
     }
 
-    private List<String> tokens = null;
-    private Iterator<String> tokensIterator = null;
+    private Term prevTerm;
+    private List<Term> terms;
+    private Iterator<Term> termsIterator;
+
 
     private final CharTermAttribute charTermAttr = addAttribute(CharTermAttribute.class);
-    private final OffsetAttribute offsetAtt = this.addAttribute(OffsetAttribute.class);
-    private final PositionIncrementAttribute posIncrAtt = this.addAttribute(PositionIncrementAttribute.class);
-    private final TypeAttribute typeAtt = this.addAttribute(TypeAttribute.class);
+    private final OffsetAttribute offsetAttr = this.addAttribute(OffsetAttribute.class);
+    private final PositionIncrementAttribute posIncrAttr = this.addAttribute(PositionIncrementAttribute.class);
+    private final TypeAttribute typeAttr = this.addAttribute(TypeAttribute.class);
 
 
     public ExtendedTokenizer() {
@@ -41,45 +39,59 @@ public class ExtendedTokenizer extends Tokenizer {
     public final boolean incrementToken() throws IOException {
         this.charTermAttr.setEmpty();
 
-        if (tokens == null) {
-            tokens = new ArrayList<>();
-            for (Token token : getTokens()) {
+        if (terms == null) {
+            terms = new ArrayList<>();
+            for (Token token : getTerms()) {
                 if (token != null) {
-                    tokens.addAll(token.getTerms());
+                    terms.addAll(token.getTerms());
                 }
             }
-            tokensIterator = tokens.iterator();
+            termsIterator = terms.iterator();
         }
-        if (!tokensIterator.hasNext()) {
+
+
+        if (!termsIterator.hasNext()) {
             return false;
         }
 
-        String token = tokensIterator.next();
-        this.charTermAttr.append(token);
-        this.posIncrAtt.setPositionIncrement(1);
-//        this.offsetAtt.setOffset(token.getTerm(), token.getEndOffset());
+        Term term = termsIterator.next();
+        int positionIncrement = 1;
+        if (prevTerm != null) {
+            positionIncrement = term.getPosition() - prevTerm.getPosition();
+        }
 
+        this.posIncrAttr.setPositionIncrement(positionIncrement);
+        this.charTermAttr.append(term.value());
+        this.offsetAttr.setOffset(term.getOffsetStart(), term.getOffsetEnd());
+        this.typeAttr.setType(term.getType().toString());
+        prevTerm = term;
         return true;
     }
 
-    public TokenList getTokens() throws IOException {
+    public TokenList getTerms() throws IOException {
         TokenList tokens = new TokenList();
-        StringBuilder term = new StringBuilder();
+        StringBuilder termBuilder = new StringBuilder();
         int charCode = input.read();
         int nextCharCode;
+        int position = 0;
+        int charPosition = 0;
 
         while(charCode != -1) {
             nextCharCode = input.read();
-            term.append((char) charCode);
+            termBuilder.append((char) charCode);
+            charPosition++;
             if (isTypeChanged(charCode, nextCharCode)) {
+                String term = termBuilder.toString();
+                int offset  = charPosition - term.length();
                 switch(getType(charCode)) {
-                    case LETTER: tokens.add(new AlphaToken(term.toString())); break;
-                    case DIGIT: tokens.add(new NumberToken(term.toString())); break;
-                    case SYMBOL: tokens.add(new SymbolToken(term.toString())); break;
-                    default: tokens.add(null); break;
+                    case LETTER: tokens.add(new AlphaToken(term, offset, position)); break;
+                    case DIGIT: tokens.add(new NumberToken(term, offset, position)); break;
+                    case SYMBOL: tokens.add(new SymbolToken(term, offset, position)); position--; break;
+                    default: tokens.add(null); position--; break;
                 }
+                position++;
 
-                term.setLength(0);
+                termBuilder.setLength(0);
 
             }
             charCode = nextCharCode;
@@ -99,9 +111,7 @@ public class ExtendedTokenizer extends Tokenizer {
     }
 
     private CharType getType(int charCode) {
-        if (Character.isSpaceChar(charCode) || charCode == -1) {
-            return CharType.END_OF_TERM;
-        } else if (Character.isLetter(charCode)) {
+        if (Character.isLetter(charCode)) {
             return CharType.LETTER;
         } else if (Character.isDigit(charCode)) {
             return CharType.DIGIT;
@@ -115,8 +125,9 @@ public class ExtendedTokenizer extends Tokenizer {
     @Override
     public final void reset() throws IOException {
         super.reset();
-        tokens = null;
-        tokensIterator = null;
+        prevTerm = null;
+        terms = null;
+        termsIterator = null;
         clearAttributes();
     }
 }

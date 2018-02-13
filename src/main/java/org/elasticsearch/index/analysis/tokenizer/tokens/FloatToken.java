@@ -1,54 +1,63 @@
 package org.elasticsearch.index.analysis.tokenizer.tokens;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class FloatToken extends NumberToken {
     private float value;
-    private String dotFormatted;
-    private String commaFormatted;
+    private Term dotFormattedTerm;
+    private Term commaFormattedTerm;
 
-    public FloatToken(String term, String sign) {
-        super(term);
-        this.sign = sign;
-        this.dotFormatted = this.term.replace(',', '.');
-        this.commaFormatted = this.term.replace('.', ',');
-        this.value = Float.parseFloat(this.dotFormatted);
-
+    public FloatToken(String term, int offset, int position) {
+        this(term, "", offset, position);
     }
 
-    public FloatToken(String term) {
-        super(term, "");
-    }
-
-    @Override
-    public List<String> getSimpleTerms() {
-        return new ArrayList<>(Collections.singletonList(term));
+    public FloatToken(String term, String sign, int offset, int position) {
+        super(term, sign, offset, position);
+        Term.Type type = sign.isEmpty() ? Term.Type.DECIMAL : Term.Type.SIGNED_DECIMAL;
+        this.term = new Term(this.term.value(), offset, position, type);
+        this.dotFormattedTerm = new Term(this.term.value().replace(',', '.'), offset, position, type);
+        this.commaFormattedTerm = new Term(this.term.value().replace('.', ','), offset, position, type);
+        this.value = Float.parseFloat(this.dotFormattedTerm.value());
     }
 
     @Override
-    public List<String> getComplexTerms() {
-        List<String> parts = new ArrayList<>();
-        parts.add(String.valueOf((int) value));
+    public List<Term> getSingleTerms() {
+        List<Term> parts = new ArrayList<>();
+        parts.add(
+            new Term(
+                String.valueOf((int) value),
+                term.getOffsetStart(),
+                term.getPosition(),
+                value > 0 ? Term.Type.NUM : Term.Type.SIGNED_NUM
+            )
+        );
+
         if (!sign.isEmpty() && value > 0) {
-            parts.add(String.valueOf(value));
+            parts.add(new Term(
+                String.valueOf(value),
+                term.getOffsetStart(),
+                this.term.getPosition(),
+                Term.Type.DECIMAL
+            ));
         }
-        if (!term.equals(dotFormatted)) {
-            parts.add(dotFormatted);
-        }
+        parts.add(dotFormattedTerm);
+        parts.add(commaFormattedTerm);
 
-        if (!term.equals(commaFormatted)) {
-            parts.add(commaFormatted);
-        }
         return parts;
     }
 
     @Override
-    public List<String> getTerms() {
-        List<String> terms = new ArrayList<>();
-        terms.addAll(getSimpleTerms());
-        terms.addAll(getComplexTerms());
+    public List<Term> getComplexTerms() {
+        List<Term> parts = new ArrayList<>();
+        parts.add(this.term);
+        return parts;
+    }
+
+    @Override
+    public List<Term> getTerms() {
+        List<Term> terms = new ArrayList<>();
+        terms.addAll(getSingleTerms());
         return terms;
     }
 

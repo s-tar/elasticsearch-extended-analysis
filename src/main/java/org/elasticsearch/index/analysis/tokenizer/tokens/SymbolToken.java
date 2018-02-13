@@ -1,8 +1,6 @@
 package org.elasticsearch.index.analysis.tokenizer.tokens;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class SymbolToken extends Token {
     private static Set<Character> AVAILABLE = new HashSet<>(
@@ -13,8 +11,8 @@ public class SymbolToken extends Token {
         Arrays.asList('%', '°', '+', '-')
     );
 
-    public SymbolToken(String term) {
-        this.term = term;
+    public SymbolToken(String term, int offset, int position) {
+        this.term = new Term(term, offset, position, Term.Type.SYMBOL);
     }
 
     public static boolean isAvailableSymbol(int charCode) {
@@ -25,21 +23,26 @@ public class SymbolToken extends Token {
     }
 
     public boolean isSign() {
-        return "+".equals(term) || "-".equals(term);
+        return "+".equals(term.value()) || "-".equals(term.value());
     }
 
     public boolean isFloatingPoint() {
-        return ".".equals(term) || ",".equals(term);
+        return ".".equals(term.value()) || ",".equals(term.value());
     }
 
     public boolean isSlash() {
-        return term.charAt(0) == '/';
+        return term.value().charAt(0) == '/';
     }
 
     public boolean isPrefix() {
         return (
-            PREFIXES.contains(term.charAt(0)) ||
-            Character.getType(term.charAt(0)) == Character.CURRENCY_SYMBOL
+            PREFIXES.contains(term.value().charAt(0)) ||
+            Character.getType(term.value().charAt(0)) == Character.CURRENCY_SYMBOL
         );
+    }
+
+    @Override
+    public List<Term> getSingleTerms() {
+        return new ArrayList<>();
     }
 }

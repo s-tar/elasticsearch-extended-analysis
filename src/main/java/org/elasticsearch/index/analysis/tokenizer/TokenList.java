@@ -52,7 +52,11 @@ public class TokenList implements Iterable<Token> {
         if (endIndex - startIndex == 1) {
             return getDirect(startIndex);
         } else {
-            return new ComplexToken(new ArrayList<>(tokens.subList(startIndex, endIndex)));
+            List<Token> tokens = new ArrayList<>(this.tokens.subList(startIndex, endIndex));
+            Token first = tokens.get(0);
+            int offset = first.term().getOffsetStart();
+            int position = first.term().getPosition();
+            return new ComplexToken(tokens, offset, position);
         }
     }
 
@@ -67,18 +71,22 @@ public class TokenList implements Iterable<Token> {
         setSize(0);
         while (index <= originSize) {
             if (isSignedNumber(index, nextIndex)) {
-                Token sign = getDirect(index);
-                Token number = getDirect(nextIndex++);
-                tokens.set(index, new NumberToken(number.getTerm(), sign.getTerm()));
+                Term sign = getDirect(index).term();
+                Term number = getDirect(nextIndex++).term();
+                int offset = sign.getOffsetStart();
+                int position = sign.getPosition();
+                tokens.set(index, new NumberToken(number.value(), sign.value(), offset, position));
             }
 
             if (isFloat(prevIndex , index, nextIndex)) {
-                Token number = getDirect(index);
-                Token floatingPoint = getDirect(nextIndex++);
-                Token fraction = getDirect(nextIndex++);
-                String floatTerm = number.getTerm() + floatingPoint.getTerm() + fraction.getTerm();
-                String sign = ((NumberToken) number).getSign();
-                tokens.set(index, new FloatToken(floatTerm, sign));
+                NumberToken number = (NumberToken) getDirect(index);
+                Term floatingPoint = getDirect(nextIndex++).term();
+                Term fraction = getDirect(nextIndex++).term();
+                String floatTerm = Math.abs(number.getValue()) + floatingPoint.value() + fraction.value();
+                String sign = number.getSign();
+                int offset = number.term().getOffsetStart();
+                int position = number.term().getPosition();
+                tokens.set(index, new FloatToken(floatTerm, sign, offset, position));
             }
 
             Token token = getDirect(index);
@@ -135,12 +143,12 @@ public class TokenList implements Iterable<Token> {
             Token possibleNumber = getDirect(nextIndex + 3);
             boolean isPrevTokenValid = (
                 prevToken == null ||
-                (prevToken instanceof SymbolToken && !prevToken.getTerm().equals(floatingPoint.getTerm()))
+                (prevToken instanceof SymbolToken && !prevToken.term().equals(floatingPoint.term()))
             );
             boolean isNextTokensValid = (
                 nextToken == null ||
-                !nextToken.getTerm().equals(floatingPoint.getTerm()) &&
-                !(possibleNumber instanceof NumberToken && ".".equals(nextToken.getTerm()))
+                !nextToken.term().equals(floatingPoint.term()) &&
+                !(possibleNumber instanceof NumberToken && nextToken.term().equals("."))
             );
             return isPrevTokenValid && isNextTokensValid;
         }
