@@ -7,14 +7,14 @@ import java.util.List;
 public class NumberToken extends Token {
     protected String sign;
 
+    public NumberToken(String term, int offset, int position) {
+        this(term, "", offset, position);
+    }
+
     public NumberToken(String term, String sign, int offset, int position) {
         Term.Type type = sign.isEmpty() ? Term.Type.NUM : Term.Type.SIGNED_NUM;
         this.term = new Term(sign + term, offset, position, type);
         this.sign = sign;
-    }
-
-    public NumberToken(String term, int offset, int position) {
-        this(term, "", offset, position);
     }
 
     public int getValue() {

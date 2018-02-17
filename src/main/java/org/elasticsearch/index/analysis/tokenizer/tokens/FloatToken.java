@@ -40,6 +40,13 @@ public class FloatToken extends NumberToken {
                 this.term.getPosition(),
                 Term.Type.DECIMAL
             ));
+
+            parts.add(new Term(
+                String.valueOf(value).replace('.',','),
+                term.getOffsetStart(),
+                this.term.getPosition(),
+                Term.Type.DECIMAL
+            ));
         }
         parts.add(dotFormattedTerm);
         parts.add(commaFormattedTerm);

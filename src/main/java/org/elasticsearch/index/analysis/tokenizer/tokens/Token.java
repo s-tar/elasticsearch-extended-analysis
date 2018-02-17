@@ -16,9 +16,7 @@ public abstract class Token {
     }
 
     public List<Term> getTerms() {
-        ArrayList<Term> terms = new ArrayList<>();
-        terms.add(this.term);
-        return terms;
+        return new ArrayList<>(Collections.singletonList(this.term));
     }
 
     public Term term() {

@@ -1,8 +1,6 @@
 package org.elasticsearch.index.analysis.tokenizer.tokens;
 
 public class Term {
-
-
     public enum Type {
         ALPHA,
         NUM,
@@ -55,8 +53,8 @@ public class Term {
     @Override
     public String toString() {
         return String.format(
-                "%s(start: %s; end: %s; position: %s)",
-                this.term, this.getOffsetStart(),this.getOffsetEnd(), this.getPosition()
+            "%s(start: %s; end: %s; position: %s)",
+            this.term, this.getOffsetStart(),this.getOffsetEnd(), this.getPosition()
         );
     }
 }

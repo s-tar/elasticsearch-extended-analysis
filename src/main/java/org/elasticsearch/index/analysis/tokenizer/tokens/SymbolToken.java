@@ -22,6 +22,10 @@ public class SymbolToken extends Token {
         );
     }
 
+    public boolean isComma() {
+        return term.value().charAt(0) == ',';
+    }
+
     public boolean isSign() {
         return "+".equals(term.value()) || "-".equals(term.value());
     }
@@ -31,7 +35,7 @@ public class SymbolToken extends Token {
     }
 
     public boolean isSlash() {
-        return term.value().charAt(0) == '/';
+        return term.value().charAt(0) == '/' || term.value().charAt(0) == '\\';
     }
 
     public boolean isPrefix() {

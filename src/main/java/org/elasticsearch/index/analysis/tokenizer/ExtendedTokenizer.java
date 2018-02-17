@@ -41,8 +41,8 @@ public class ExtendedTokenizer extends Tokenizer {
 
         if (terms == null) {
             terms = new ArrayList<>();
-            for (Token token : getTerms()) {
-                if (token != null) {
+            for (Token token : getTokens()) {
+                if (token != null && !(token instanceof SymbolToken)) {
                     terms.addAll(token.getTerms());
                 }
             }
@@ -68,7 +68,7 @@ public class ExtendedTokenizer extends Tokenizer {
         return true;
     }
 
-    public TokenList getTerms() throws IOException {
+    public TokenList getTokens() throws IOException {
         TokenList tokens = new TokenList();
         StringBuilder termBuilder = new StringBuilder();
         int charCode = input.read();

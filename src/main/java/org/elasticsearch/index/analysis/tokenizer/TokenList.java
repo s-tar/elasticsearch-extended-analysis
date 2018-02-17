@@ -33,11 +33,10 @@ public class TokenList implements Iterable<Token> {
 
     private Token get(int index, boolean direct) {
         int size = direct ? tokens.size() : this.size;
-        if (index < 0) {
-            return size + index >= 0 ? tokens.get(size + index) : null;
-        } else {
+        if (index >= 0) {
             return index < size ? tokens.get(index) : null;
         }
+        return null;
     }
 
     public int size() {
@@ -63,7 +62,7 @@ public class TokenList implements Iterable<Token> {
     public void complicateTokens() {
         if (size == 0) return;
         int originSize = size;
-        int prevIndex = 0;
+        int prevIndex = -1;
         int index = 0;
         int nextIndex = 1;
         int prevSlashIndex = 0;
@@ -90,28 +89,41 @@ public class TokenList implements Iterable<Token> {
             }
 
             Token token = getDirect(index);
+            Token prevToken = getDirect(prevIndex);
+            if (token instanceof SymbolToken && prevToken == null) {
+                token = null;
+            }
+
+            if (token instanceof SymbolToken && ((SymbolToken) token).isComma()) {
+                token = null;
+            }
+
             if (
                 (token instanceof SymbolToken && ((SymbolToken) token).isSlash()) ||
                 (token == null && termStartIndex < prevSlashIndex)
             ) {
                 int currentIndex = size;
                 setSize(prevSlashIndex);
-                add(createComplex(prevSlashIndex, currentIndex));
+                if (prevSlashIndex < currentIndex) {
+                    add(createComplex(prevSlashIndex, currentIndex));
+                }
                 prevSlashIndex = size + 1;
             }
 
             if (token == null) {
                 int currentIndex = size;
-                setSize(termStartIndex);
-                add(createComplex(termStartIndex, currentIndex));
-                if (nextIndex < originSize) {
-                    add(null);
+                if (termStartIndex < currentIndex) {
+                    setSize(termStartIndex);
+                    add(createComplex(termStartIndex, currentIndex));
+                    if (nextIndex < originSize) {
+                        add(null);
+                    }
+                    prevSlashIndex = termStartIndex = size;
                 }
-                prevSlashIndex = termStartIndex = size;
             } else {
-                add(getDirect(index));
+                add(token);
             }
-            prevIndex = size > 0 ? size - 1 : 0;
+            prevIndex = size - 1;
             index = nextIndex;
             nextIndex++;
         }
@@ -122,7 +134,7 @@ public class TokenList implements Iterable<Token> {
         if (token instanceof SymbolToken && ((SymbolToken) token).isSign()) {
             Token nextToken = getDirect(nextIndex);
             if (nextToken instanceof NumberToken) {
-                Token prevToken = index > 1 ? getDirect(index - 1) : null;
+                Token prevToken = getDirect(index - 1);
                 return prevToken == null || prevToken instanceof SymbolToken;
             }
         }
@@ -138,7 +150,7 @@ public class TokenList implements Iterable<Token> {
             fraction instanceof NumberToken &&
             floatingPoint instanceof SymbolToken && ((SymbolToken) floatingPoint).isFloatingPoint()
         ) {
-            Token prevToken = index > 0 ? getDirect(prevIndex) : null;
+            Token prevToken = getDirect(prevIndex);
             Token nextToken = getDirect(nextIndex + 2);
             Token possibleNumber = getDirect(nextIndex + 3);
             boolean isPrevTokenValid = (
@@ -181,9 +193,7 @@ public class TokenList implements Iterable<Token> {
         StringBuilder output = new StringBuilder();
         output.append('[');
         for (int i = 0; i < size; i++) {
-            if (i > 0) {
-                output.append(", ");
-            }
+            if (i > 0) output.append(", ");
             output.append(tokens.get(i));
         }
         output.append(']');

@@ -51,11 +51,11 @@ public class ComplexToken extends Token {
         while (parts.hasNext()) {
             Token part = parts.next();
             if (part instanceof SymbolToken) {
-                SymbolToken symbol = (SymbolToken) part;
                 if(complexTerm.length() == 0) {
                     continue;
                 }
 
+                SymbolToken symbol = (SymbolToken) part;
                 if (!symbol.isPrefix() || prevPart instanceof SymbolToken || parts.hasNext()) {
                     complexTerm.append(symbol.term().value());
                     continue;
