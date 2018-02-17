@@ -109,7 +109,7 @@ public class ExtendedTokenizerTests {
     }
 
     @Test
-    public void testDotDecimalTokens() throws IOException {
+    public void testDecimalTokens() throws IOException {
         assertNotEquals(getTerms("12.44"), Arrays.asList("12.44", "12", "44"));
         assertEquals(getTerms("HD.+23"), Arrays.asList("HD.+23", "HD", "+23", "23"));
         assertEquals(getTerms("12.44Mhg"), Arrays.asList("12.44Mhg", "12", "12.44", "12,44", "Mhg"));
@@ -120,12 +120,18 @@ public class ExtendedTokenizerTests {
 
         assertEquals(getTerms("12.44,23.6"), Arrays.asList("12", "12.44", "12,44", "23", "23.6", "23,6"));
         assertEquals(getTerms("12,44.23,6"), Arrays.asList("12", "44", "44.23", "44,23", "6"));
+        assertEquals(
+            getTerms("12.34-56.78"),
+            Arrays.asList("12.34-56.78", "12", "12.34", "12,34", "56", "56.78", "56,78")
+        );
     }
 
     @Test
     public void testSlashConnectionTokens() throws IOException {
         assertEquals(getTerms("12/HD"), Arrays.asList("12/HD", "12", "HD"));
         assertEquals(getTerms("K12/HD9"), Arrays.asList("K12", "K12/HD", "K12/HD9", "K", "12", "HD9", "HD", "9"));
+        assertEquals(getTerms("20.5m/s"), Arrays.asList("20.5m", "20.5m/s", "20", "20.5", "20,5", "m", "s"));
+
 
         assertEquals(
             getTerms("K7/H-D1/9F2"),
@@ -145,6 +151,10 @@ public class ExtendedTokenizerTests {
         assertEquals(getTerms("1...3"), Arrays.asList("1...3", "1", "3"));
         assertEquals(getTerms("A,B"), Arrays.asList("A", "B"));
         assertEquals(getTerms("H&M"), Arrays.asList("H&M", "H", "M"));
+        assertEquals(
+            getTerms("LP156WH2-TLQB"),
+            Arrays.asList("LP156", "LP156WH", "LP156WH2", "LP156WH2-TLQB", "LP", "156", "WH", "2", "TLQB")
+        );
     }
 
 
